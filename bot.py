@@ -18,7 +18,7 @@ from telegram.ext import (
 # ============================================================================
 # CONFIGURAÇÃO RÁPIDA (EDITAR SÓ ESSAS LINHAS)
 # ============================================================================
-TOKEN = "7390135237:AAE1A6HoR90Cd_cKZ8AmFCBIYQkEJvdtsew"  # <-- COLOCA TEU TOKEN REAL AQUI
+TOKEN = "SEU_TOKEN_AQUI"  # <-- COLOCA TEU TOKEN REAL AQUI
 DONO_ID = 7752239017       # <-- TEU ID (DONO ÚNICO)
 SUPORTE_LINK = "http://t.me/Scxttvoid_Bot"
 
@@ -1312,8 +1312,282 @@ async def definir_periodo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await mostrar_estatisticas(update, context)
 
 # ============================================================================
-# HANDLERS DE COMPRA (simplificados pra não alongar demais)
+# COMANDOS DE ADMINISTRAÇÃO
 # ============================================================================
+
+async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Banir usuário permanentemente"""
+    user_id = update.effective_user.id
+    if user_id != DONO_ID and not get_adm_permissao(user_id, "todas"):
+        await update.message.reply_text("⚠️ Acesso restrito ao dono ou ADMs com permissão total.")
+        return
+    
+    if len(context.args) < 1:
+        await update.message.reply_text("Uso: /ban <ID_USUARIO>")
+        return
+    
+    try:
+        alvo_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ ID inválido. Use números inteiros.")
+        return
+    
+    if alvo_id == DONO_ID:
+        await update.message.reply_text("🚫 Você não pode banir o dono!")
+        return
+    
+    if alvo_id == user_id:
+        await update.message.reply_text("🤔 Você não pode se banir.")
+        return
+    
+    user_data = get_user_data(alvo_id)
+    user_data["ban"] = True
+    salvar_dados()
+    
+    # Notificar usuário banido (se possível)
+    try:
+        await context.bot.send_message(
+            chat_id=alvo_id,
+            text="🚫 <b>Você foi banido permanentemente deste bot.</b>",
+            parse_mode="HTML"
+        )
+    except:
+        pass
+    
+    await update.message.reply_text(
+        f"✅ Usuário <code>{alvo_id}</code> banido com sucesso!",
+        parse_mode="HTML"
+    )
+    registrar_transacao("ban_usuario", {
+        "adm_id": user_id,
+        "adm_nome": adms.get(user_id, {}).get("nome", "Desconhecido"),
+        "user_id": alvo_id,
+        "user_nome": user_data.get("nome", "Desconhecido")
+    })
+
+async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Desbanir usuário"""
+    user_id = update.effective_user.id
+    if user_id != DONO_ID and not get_adm_permissao(user_id, "todas"):
+        await update.message.reply_text("⚠️ Acesso restrito ao dono ou ADMs com permissão total.")
+        return
+    
+    if len(context.args) < 1:
+        await update.message.reply_text("Uso: /unban <ID_USUARIO>")
+        return
+    
+    try:
+        alvo_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ ID inválido. Use números inteiros.")
+        return
+    
+    user_data = get_user_data(alvo_id)
+    user_data["ban"] = False
+    salvar_dados()
+    
+    # Notificar usuário desbanido
+    try:
+        await context.bot.send_message(
+            chat_id=alvo_id,
+            text="✅ <b>Seu acesso foi restaurado!</b>",
+            parse_mode="HTML"
+        )
+    except:
+        pass
+    
+    await update.message.reply_text(
+        f"✅ Usuário <code>{alvo_id}</code> desbanido com sucesso!",
+        parse_mode="HTML"
+    )
+    registrar_transacao("unban_usuario", {
+        "adm_id": user_id,
+        "adm_nome": adms.get(user_id, {}).get("nome", "Desconhecido"),
+        "user_id": alvo_id,
+        "user_nome": user_data.get("nome", "Desconhecido")
+    })
+
+async def addsaldo_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Adicionar saldo manualmente a um usuário"""
+    user_id = update.effective_user.id
+    if user_id != DONO_ID and not get_adm_permissao(user_id, "todas"):
+        await update.message.reply_text("⚠️ Acesso restrito ao dono ou ADMs com permissão total.")
+        return
+    
+    if len(context.args) < 2:
+        await update.message.reply_text("Uso: /addsaldo <ID_USUARIO> <VALOR>")
+        return
+    
+    try:
+        alvo_id = int(context.args[0])
+        valor = float(context.args[1].replace(',', '.'))
+        if valor <= 0:
+            raise ValueError
+    except:
+        await update.message.reply_text("❌ Valor inválido. Use números positivos (ex: 50.00 ou 50,00)")
+        return
+    
+    user_data = get_user_data(alvo_id)
+    saldo_anterior = user_data["saldo"]
+    user_data["saldo"] += valor
+    salvar_dados()
+    
+    # Notificar usuário
+    try:
+        await context.bot.send_message(
+            chat_id=alvo_id,
+            text=(
+                f"💰 <b>Saldo adicionado!</b>\n"
+                f"Valor: {formatar_moeda(valor)}\n"
+                f"Saldo anterior: {formatar_moeda(saldo_anterior)}\n"
+                f"Saldo atual: {formatar_moeda(user_data['saldo'])}"
+            ),
+            parse_mode="HTML"
+        )
+    except:
+        pass
+    
+    await update.message.reply_text(
+        f"✅ Adicionado {formatar_moeda(valor)} ao usuário <code>{alvo_id}</code>!\n"
+        f"Saldo atual: {formatar_moeda(user_data['saldo'])}",
+        parse_mode="HTML"
+    )
+    registrar_transacao("addsaldo_manual", {
+        "adm_id": user_id,
+        "adm_nome": adms.get(user_id, {}).get("nome", "Desconhecido"),
+        "user_id": alvo_id,
+        "user_nome": user_data.get("nome", "Desconhecido"),
+        "valor": valor,
+        "saldo_anterior": saldo_anterior,
+        "saldo_novo": user_data["saldo"]
+    })
+
+async def addprodutos_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Adicionar múltiplos produtos (cartões) ao estoque"""
+    user_id = update.effective_user.id
+    if user_id != DONO_ID and not get_adm_permissao(user_id, "todas"):
+        await update.message.reply_text("⚠️ Acesso restrito ao dono ou ADMs com permissão total.")
+        return
+    
+    # Pegar texto completo da mensagem (depois do comando)
+    texto_completo = update.message.text.strip()
+    if not texto_completo.startswith("/addprodutos"):
+        await update.message.reply_text("❌ Formato inválido.")
+        return
+    
+    # Extrair apenas os produtos (remover o comando)
+    produtos_texto = texto_completo.replace("/addprodutos", "", 1).strip()
+    
+    if not produtos_texto:
+        await update.message.reply_text(
+            "📦 <b>ADICIONAR PRODUTOS</b>\n\n"
+            "Envie os produtos no formato:\n"
+            "<code>/addprodutos\n"
+            "5529290480366572|06|2028|218\n"
+            "4985550270884773|07|2030|134\n"
+            "...</code>",
+            parse_mode="HTML"
+        )
+        return
+    
+    # Processar cada linha
+    linhas = produtos_texto.strip().split('\n')
+    adicionados = 0
+    invalidos = 0
+    
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha or linha.startswith('/'):
+            continue
+        
+        # Validar formato mínimo (deve ter 3 pipes)
+        if linha.count('|') < 3:
+            invalidos += 1
+            continue
+        
+        # Adicionar ao estoque
+        numeros_disponiveis.append(linha)
+        adicionados += 1
+    
+    salvar_dados()
+    get_grupos.cache_clear()  # Limpar cache para atualizar grupos
+    
+    await update.message.reply_text(
+        f"✅ <b>Produtos adicionados!</b>\n"
+        f"📦 Adicionados: {adicionados}\n"
+        f"❌ Inválidos: {invalidos}\n"
+        f"📦 Total em estoque: {len(numeros_disponiveis)}",
+        parse_mode="HTML"
+    )
+    registrar_transacao("addprodutos", {
+        "adm_id": user_id,
+        "adm_nome": adms.get(user_id, {}).get("nome", "Desconhecido"),
+        "quantidade": adicionados,
+        "invalidos": invalidos,
+        "estoque_total": len(numeros_disponiveis)
+    })
+
+async def aviso_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Enviar aviso broadcast para todos os usuários"""
+    user_id = update.effective_user.id
+    if user_id != DONO_ID and not get_adm_permissao(user_id, "todas"):
+        await update.message.reply_text("⚠️ Acesso restrito ao dono ou ADMs com permissão total.")
+        return
+    
+    if not context.args:
+        await update.message.reply_text(
+            "📢 <b>ENVIAR AVISO</b>\n\n"
+            "Uso: <code>/aviso mensagem aqui</code>\n"
+            "Ex: <code>/aviso Bonus de 50% na recarga só hoje!</code>",
+            parse_mode="HTML"
+        )
+        return
+    
+    mensagem = " ".join(context.args)
+    total_enviados = 0
+    total_falhas = 0
+    
+    # Enviar para todos os usuários (exceto banidos)
+    for uid, dados in usuarios.items():
+        if dados.get("ban", False):
+            continue
+        
+        try:
+            await context.bot.send_message(
+                chat_id=uid,
+                text=(
+                    "🔔 <b>AVISOOFFICIAL</b>\n"
+                    "━━━━━━━━━━━━━━━━\n"
+                    f"{mensagem}\n"
+                    "━━━━━━━━━━━━━━━━"
+                ),
+                parse_mode="HTML"
+            )
+            total_enviados += 1
+            time.sleep(0.05)  # Evitar flood no Telegram
+        except:
+            total_falhas += 1
+    
+    await update.message.reply_text(
+        f"✅ <b>Aviso enviado!</b>\n"
+        f"📤 Enviados: {total_enviados}\n"
+        f"❌ Falhas: {total_falhas}\n"
+        f"👥 Total de usuários: {len(usuarios)}",
+        parse_mode="HTML"
+    )
+    registrar_transacao("aviso_broadcast", {
+        "adm_id": user_id,
+        "adm_nome": adms.get(user_id, {}).get("nome", "Desconhecido"),
+        "mensagem": mensagem,
+        "enviados": total_enviados,
+        "falhas": total_falhas
+    })
+
+
+# ============================================================================
+# HANDLERS DE COMPRA E PERFIL DO USUÁRIO
+# ============================================================================
+
 async def comprar_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1635,7 +1909,6 @@ async def receber_valor_recarga(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def voltar_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await start(update, context)
-
 # ============================================================================
 # INICIALIZAÇÃO
 # ============================================================================
@@ -1648,6 +1921,13 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("cobrar", cobrar_cmd))
     application.add_handler(CommandHandler("pago", pago_cmd))
+   
+    # Comandos de administração (com o /aviso adicionado)
+    application.add_handler(CommandHandler("ban", ban_cmd))
+    application.add_handler(CommandHandler("unban", unban_cmd))
+    application.add_handler(CommandHandler("addsaldo", addsaldo_cmd)) 
+    application.add_handler(CommandHandler("addprodutos", addprodutos_cmd))
+    application.add_handler(CommandHandler("aviso", aviso_cmd))  # <-- FALTAVA ESTE
     
     # Callbacks principais
     application.add_handler(CallbackQueryHandler(start, pattern="^voltar_menu$"))
