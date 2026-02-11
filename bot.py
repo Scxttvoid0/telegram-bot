@@ -68,15 +68,24 @@ tickets: Dict[str, dict] = {}
 
 # Configurações editáveis da interface
 config_interface = {
-    "titulo": "🔒 BIN STORE",
-    "subtitulo": "🟢 Online • {} disponíveis",
+    "titulo": "BEM-VINDO AO MERCADO NEGRO 🛒",
+    "subtitulo": " ESTOQUE COM GG BLACK, PLATINUM e AMEX 💎",
     "mensagem_dia": "⚡ Entrega em até 2 minutos!",
     "avisos": [
         "⚠️ Compre apenas se tiver certeza",
         "❌ Sem reembolso após entrega"
     ],
     "dicas": [
-        "💡 Use /start para atualizar",
+        "• 456311 - UPANDO RECARGA TIM E CLARO!
+
+• 407832 - IFOOD, SHEIN, SHOPEE, 99FOOD, GOOGLE PLAY, CENTAURO E ETC..!
+
+• 498407 - UPANDO ALIEXPRESS EM OUTRAS GATES!
+
+• 406655 - UPANDO SHEIN, ALIEXPRESS, 99PAY!
+
+• 374355 - UPANDO IFOOD, XBOX GAME PASS, FATURA VIVO E JOGOS DA XBOX!
+",
         "🤝 Indique amigos e ganhe comissão"
     ]
 }
@@ -84,18 +93,18 @@ config_interface = {
 # Configurações do sistema
 config_sistema = {
     "precificacao": {
-        "498555": 15.00,
-        "512345": 25.00,
-        "458763": 35.00,
-        "543210": 20.00,
-        "400000": 18.00,
-        "555555": 30.00,
-        "444444": 22.00,
-        "511111": 28.00
+        "490144": 25.00,
+        "553636": 25.00,
+        "458763": 10.00,
+        "543210": 10.00,
+        "400000": 10.00,
+        "555555": 10.00,
+        "444444": 10.00,
+        "511111": 10.00
     },
     "bin_nomes": {
-        "498555": "💳 pepa",
-        "512345": "💎 gorge",
+        "490144": "💳 platinum itau",
+        "553636": "💎 black",
         "458763": "🚀 lala",
         "543210": "⭐ xixi",
         "400000": "🛡️ lolo",
@@ -103,7 +112,7 @@ config_sistema = {
         "444444": "✨ lele",
         "511111": "🔥 lili"
     },
-    "bin_destaque": ["498555", "512345"],
+    "bin_destaque": ["490144", "553636"],
     "comissao_afiliado": 50.0,
     "bonus_recarga_ativo": False,
     "modo_manutencao": False,
@@ -1457,7 +1466,7 @@ async def aviso_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=uid,
                 text=(
-                    "🔔 <b>AVISOOFFICIAL</b>\n"
+                    "🔔 <b>AVISO-OFFICIAL</b>\n"
                     "━━━━━━━━━━━━━━━━\n"
                     f"{mensagem}\n"
                     "━━━━━━━━━━━━━━━━"
