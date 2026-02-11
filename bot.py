@@ -18,7 +18,7 @@ from telegram.ext import (
 # ============================================================================
 # CONFIGURAÇÃO RÁPIDA (EDITAR SÓ ESSAS LINHAS)
 # ============================================================================
-TOKEN = "SEU_TOKEN_AQUI"  # <-- COLOCA TEU TOKEN REAL AQUI
+TOKEN = "7390135237:AAE1A6HoR90Cd_cKZ8AmFCBIYQkEJvdtsew"  # <-- COLOCA TEU TOKEN REAL AQUI
 DONO_ID = 7752239017       # <-- TEU ID (DONO ÚNICO)
 SUPORTE_LINK = "http://t.me/Scxttvoid_Bot"
 
